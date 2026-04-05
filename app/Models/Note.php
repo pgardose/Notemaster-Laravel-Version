@@ -3,12 +3,14 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Note extends Model
 {
     protected $fillable = [
+        'user_id',           // ← THIS WAS MISSING
         'title',
         'original_content',
         'summary',
@@ -19,39 +21,35 @@ class Note extends Model
         'updated_at' => 'datetime',
     ];
 
-    /**
-     * Many-to-many: Note has many Tags
-     * (matches your Flask: tags = db.relationship('Tag', secondary=note_tags))
-     */
+    // Note belongs to a User
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\User::class);
+    }
+
+    // Many-to-many: Note has many Tags
     public function tags(): BelongsToMany
     {
-        return $this->belongsToMany(Tag::class)
-                    ->withTimestamps();
+        return $this->belongsToMany(Tag::class)->withTimestamps();
     }
 
-    /**
-     * One-to-many: Note has many Messages
-     * (matches your Flask: chat_messages = db.relationship with cascade delete)
-     */
+    // One-to-many: Note has many Messages
     public function messages(): HasMany
     {
-        return $this->hasMany(Message::class)
-                    ->orderBy('created_at');
+        return $this->hasMany(Message::class)->orderBy('created_at');
     }
 
-    /**
-     * Search scope (for your search feature)
-     */
+    // Search scope
     public function scopeSearch($query, $term)
     {
-        return $query->where('title', 'like', "%{$term}%")
-                     ->orWhere('original_content', 'like', "%{$term}%")
-                     ->orWhere('summary', 'like', "%{$term}%");
+        return $query->where(function($q) use ($term) {
+            $q->where('title', 'like', "%{$term}%")
+              ->orWhere('original_content', 'like', "%{$term}%")
+              ->orWhere('summary', 'like', "%{$term}%");
+        });
     }
 
-    /**
-     * Filter by tag (for tag filtering)
-     */
+    // Filter by tag
     public function scopeWithTag($query, $tagId)
     {
         return $query->whereHas('tags', function($q) use ($tagId) {

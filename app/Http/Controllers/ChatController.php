@@ -6,6 +6,7 @@ use App\Models\Note;
 use App\Models\Message;
 use App\Services\AiService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class ChatController extends Controller
 {
@@ -18,11 +19,18 @@ class ChatController extends Controller
 
     /**
      * POST /api/notes/{note}/chat
+     * For logged-in users: saves messages to DB
+     * Guest chat is handled client-side (no note_id available for guests)
      */
     public function send(Request $request, Note $note)
     {
+        // Only the note's owner can chat with it
+        if (!Auth::check() || $note->user_id !== Auth::id()) {
+            return response()->json(['error' => 'Forbidden'], 403);
+        }
+
         $validated = $request->validate([
-            'question' => 'required|string|max:1000', // ✅ matches JS: { question }
+            'question' => 'required|string|max:1000',
         ]);
 
         // Save user message
@@ -32,7 +40,7 @@ class ChatController extends Controller
             'content' => $validated['question'],
         ]);
 
-        // Get chat history (excluding the message we just saved)
+        // Get chat history for context
         $chatHistory = $note->messages()
             ->where('id', '<', $userMessage->id)
             ->get()
@@ -54,22 +62,42 @@ class ChatController extends Controller
             'content' => $aiResponse,
         ]);
 
-        // ✅ Returns { response } to match JS: data.response
-        return response()->json([
-            'response' => $aiResponse,
+        return response()->json(['response' => $aiResponse]);
+    }
+
+    /**
+     * POST /api/guest-chat
+     * Stateless chat for guests — no DB, just AI response
+     */
+    public function guestChat(Request $request)
+    {
+        $validated = $request->validate([
+            'question'    => 'required|string|max:1000',
+            'note_text'   => 'required|string|max:50000',
+            'summary'     => 'nullable|string',
+            'history'     => 'nullable|array',
         ]);
+
+        $aiResponse = $this->aiService->generateChatResponse(
+            $validated['note_text'],
+            $validated['summary'] ?? '',
+            $validated['history'] ?? [],
+            $validated['question']
+        );
+
+        return response()->json(['response' => $aiResponse]);
     }
 
     /**
      * GET /api/notes/{note}/chat
-     * Returns { messages: [...] } to match JS: data.messages
      */
     public function history(Note $note)
     {
-        $messages = $note->messages()->orderBy('id')->get();
+        if (!Auth::check() || $note->user_id !== Auth::id()) {
+            return response()->json(['error' => 'Forbidden'], 403);
+        }
 
-        return response()->json([
-            'messages' => $messages,
-        ]);
+        $messages = $note->messages()->orderBy('id')->get();
+        return response()->json(['messages' => $messages]);
     }
 }

@@ -3,15 +3,28 @@
 use App\Http\Controllers\NoteController;
 use App\Http\Controllers\TagController;
 use App\Http\Controllers\ChatController;
+use App\Http\Controllers\AuthController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\DB;
 
-// Home page
+// ── Home ──────────────────────────────────────────────────────
 Route::get('/', function () {
     return view('index');
 })->name('home');
 
-// Health check
+// ── Auth routes (guests only) ─────────────────────────────────
+Route::middleware('guest')->group(function () {
+    Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
+    Route::post('/register', [AuthController::class, 'register']);
+    Route::get('/login',    [AuthController::class, 'showLogin'])->name('login');
+    Route::post('/login',   [AuthController::class, 'login']);
+});
+
+Route::post('/logout', [AuthController::class, 'logout'])
+    ->middleware('auth')
+    ->name('logout');
+
+// ── Health check ──────────────────────────────────────────────
 Route::get('/health', function () {
     try {
         DB::connection()->getPdo();
@@ -19,29 +32,41 @@ Route::get('/health', function () {
     } catch (\Exception $e) {
         $dbStatus = 'disconnected';
     }
-
-    return response()->json([
-        'status' => 'healthy',
-        'database' => $dbStatus
-    ]);
+    return response()->json(['status' => 'healthy', 'database' => $dbStatus]);
 });
 
-// API Routes
-Route::prefix('api')->group(function () {
-    
-    // Notes
+// ── API Routes (web middleware so session/Auth::check() works) ─
+Route::prefix('api')->middleware('web')->group(function () {
+
+    // Summarize (guests get summary only, auth users get it saved)
     Route::post('/summarize', [NoteController::class, 'summarize']);
-    Route::get('/notes', [NoteController::class, 'index']);
-    Route::get('/notes/{note}', [NoteController::class, 'show']);
+
+    // Guest chat (stateless, no note_id)
+    Route::post('/guest-chat', [ChatController::class, 'guestChat']);
+
+    // Tags
+    Route::get('/tags',  [TagController::class, 'index']);
+    Route::post('/tags', [TagController::class, 'store']);
+
+    // Notes
+    Route::get('/notes',          [NoteController::class, 'index']);
+    Route::get('/notes/{note}',   [NoteController::class, 'show']);
     Route::delete('/notes/{note}', [NoteController::class, 'destroy']);
-    
+
     // Chat
     Route::post('/notes/{note}/chat', [ChatController::class, 'send']);
-    Route::get('/notes/{note}/chat', [ChatController::class, 'history']);
-    
-    // Tags
-    Route::get('/tags', [TagController::class, 'index']);
-    Route::post('/tags', [TagController::class, 'store']);
-    Route::post('/notes/{note}/tags', [TagController::class, 'attach']);
-    Route::delete('/notes/{note}/tags/{tag}', [TagController::class, 'detach']);
+    Route::get('/notes/{note}/chat',  [ChatController::class, 'history']);
+
+    // Tags on notes
+    Route::post('/notes/{note}/tags',          [TagController::class, 'attach']);
+    Route::delete('/notes/{note}/tags/{tag}',  [TagController::class, 'detach']);
+
+    Route::get('/api/debug-auth', function () {
+    return response()->json([
+        'auth_check' => Auth::check(),
+        'auth_id'    => Auth::id(),
+        'session_id' => session()->getId(),
+        'user'       => Auth::user()?->only('id', 'email'),
+    ]);
+});
 });

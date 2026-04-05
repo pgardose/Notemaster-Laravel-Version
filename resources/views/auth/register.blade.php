@@ -1,52 +1,80 @@
-<x-guest-layout>
-    <form method="POST" action="{{ route('register') }}">
-        @csrf
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register — NoteMaster AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background: #0f111a; }
+        .brand { font-family: 'Space Grotesk', sans-serif; }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
 
-        <!-- Name -->
-        <div>
-            <x-input-label for="name" :value="__('Name')" />
-            <x-text-input id="name" class="block mt-1 w-full" type="text" name="name" :value="old('name')" required autofocus autocomplete="name" />
-            <x-input-error :messages="$errors->get('name')" class="mt-2" />
-        </div>
-
-        <!-- Email Address -->
-        <div class="mt-4">
-            <x-input-label for="email" :value="__('Email')" />
-            <x-text-input id="email" class="block mt-1 w-full" type="email" name="email" :value="old('email')" required autocomplete="username" />
-            <x-input-error :messages="$errors->get('email')" class="mt-2" />
-        </div>
-
-        <!-- Password -->
-        <div class="mt-4">
-            <x-input-label for="password" :value="__('Password')" />
-
-            <x-text-input id="password" class="block mt-1 w-full"
-                            type="password"
-                            name="password"
-                            required autocomplete="new-password" />
-
-            <x-input-error :messages="$errors->get('password')" class="mt-2" />
-        </div>
-
-        <!-- Confirm Password -->
-        <div class="mt-4">
-            <x-input-label for="password_confirmation" :value="__('Confirm Password')" />
-
-            <x-text-input id="password_confirmation" class="block mt-1 w-full"
-                            type="password"
-                            name="password_confirmation" required autocomplete="new-password" />
-
-            <x-input-error :messages="$errors->get('password_confirmation')" class="mt-2" />
-        </div>
-
-        <div class="flex items-center justify-end mt-4">
-            <a class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" href="{{ route('login') }}">
-                {{ __('Already registered?') }}
+    <div class="w-full max-w-md">
+        <div class="text-center mb-8">
+            <a href="/" class="brand text-2xl font-bold text-white">
+                NoteMaster <span class="text-indigo-400">AI</span>
             </a>
-
-            <x-primary-button class="ms-4">
-                {{ __('Register') }}
-            </x-primary-button>
+            <p class="text-slate-400 mt-2">Create your account</p>
         </div>
-    </form>
-</x-guest-layout>
+
+        <div class="bg-white/5 border border-white/10 rounded-2xl p-8">
+            @if ($errors->any())
+                <div class="mb-4 p-3 bg-red-500/20 border border-red-500/30 rounded-lg text-red-400 text-sm">
+                    {{ $errors->first() }}
+                </div>
+            @endif
+
+            <form method="POST" action="/register">
+                @csrf
+
+                <div class="mb-4">
+                    <label class="block text-sm text-slate-300 mb-2">Name</label>
+                    <input type="text" name="name" value="{{ old('name') }}" required
+                        class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition"
+                        placeholder="Your name">
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-sm text-slate-300 mb-2">Email</label>
+                    <input type="email" name="email" value="{{ old('email') }}" required
+                        class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition"
+                        placeholder="you@example.com">
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-sm text-slate-300 mb-2">Password</label>
+                    <input type="password" name="password" required
+                        class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition"
+                        placeholder="Min. 8 characters">
+                </div>
+
+                <div class="mb-6">
+                    <label class="block text-sm text-slate-300 mb-2">Confirm Password</label>
+                    <input type="password" name="password_confirmation" required
+                        class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition"
+                        placeholder="Repeat password">
+                </div>
+
+                <button type="submit"
+                    class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 rounded-xl transition">
+                    Create Account
+                </button>
+            </form>
+
+            <p class="text-center text-slate-400 text-sm mt-6">
+                Already have an account?
+                <a href="/login" class="text-indigo-400 hover:text-indigo-300 font-medium">Sign in</a>
+            </p>
+        </div>
+
+        <p class="text-center mt-4">
+            <a href="/" class="text-slate-500 hover:text-slate-400 text-sm">← Continue as guest</a>
+        </p>
+    </div>
+
+</body>
+</html>
