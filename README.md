@@ -1,176 +1,280 @@
-# NoteMaster AI
+# NoteMaster AI 🧠
 
-NoteMaster AI is a comprehensive study assistant built on the Laravel 11 framework. It enables users to upload documents or paste text to receive instant, AI-generated summaries and engage in contextual, interactive chats with their notes using the Google Gemini API.
+A production-ready, SaaS-style AI study assistant built with Laravel 11. Paste text or upload a PDF and get an instant AI-generated summary, then chat with the AI about your notes — all saved to your personal account.
 
 ---
 
 ## Features
 
-* **AI Summarization:** Submit raw text or upload a PDF/TXT file to generate a structured summary powered by Google Gemini.
-* **Interactive Chat:** Ask follow-up questions and interact conversationally with the contents of any saved note.
-* **Tag System:** Organize and categorize notes using custom color-coded tags.
-* **User Authentication:** Secure registration and login system to maintain data privacy.
-* **Note History:** Accessible sidebar interface displaying all past notes for quick retrieval.
-* **Guest Mode:** Summarize and chat statelessly without an account (data is not retained).
-
----
-
-## Technical Stack
-
-| Layer | Technology |
-| :--- | :--- |
-| **Backend** | Laravel 11, PHP 8.2 |
-| **Database** | MySQL |
-| **AI Engine** | Google Gemini API (gemini-2.5-flash) |
-| **Frontend** | Blade, Tailwind CSS, Vanilla JavaScript |
-| **Icons** | Lucide Icons |
+- **AI Summarization** — paste text or upload PDF/TXT files, get structured bullet-point summaries via Google Gemini
+- **Context-Aware Chat** — ask questions about any saved note; the AI answers based strictly on that note's content
+- **Guest Mode** — visitors can summarize and chat without an account; data is not saved
+- **User Accounts** — register/login to permanently save notes, tags, and chat history
+- **Tag System** — create custom colored tags and assign them to notes
+- **Instant Search** — search notes by keyword or filter by tag
+- **ChatGPT-Style Sidebar** — history panel updates in real time after every action
 
 ---
 
 ## Requirements
 
-* PHP 8.2 or higher
-* Composer
-* MySQL
-* Google Gemini API Key
+Make sure you have all of these installed before starting:
+
+| Tool | Minimum Version | Check with |
+|------|----------------|------------|
+| PHP | 8.2+ | `php -v` |
+| Composer | 2.x | `composer -V` |
+| Node.js | 18+ | `node -v` |
+| npm | 9+ | `npm -v` |
+| MySQL | 8.0+ (or use SQLite) | `mysql --version` |
+
+You also need a **Google Gemini API key** — get one free at [aistudio.google.com](https://aistudio.google.com).
 
 ---
 
 ## Installation
 
-**1. Clone the repository**
+### 1. Clone the repository
+
 ```bash
-git clone https://github.com/your-username/notemaster-laravel.git
-cd notemaster-laravel
+git clone https://github.com/your-username/notemaster-ai.git
+cd notemaster-ai
 ```
 
-**2. Install dependencies**
+### 2. Install PHP dependencies
+
 ```bash
 composer install
 ```
 
-**3. Configure the environment**
-Copy the example environment file and generate an application key:
+### 3. Install Node dependencies
+
+```bash
+npm install
+```
+
+### 4. Create your environment file
+
 ```bash
 cp .env.example .env
+```
+
+### 5. Generate the application key
+
+```bash
 php artisan key:generate
 ```
 
-Edit your `.env` file to include your database and Gemini API credentials:
+### 6. Configure your `.env` file
+
+Open `.env` and fill in these values:
+
 ```env
+APP_NAME="NoteMaster AI"
+APP_ENV=local
+APP_DEBUG=true
+APP_URL=http://127.0.0.1:8000
+
+# ── Database ───────────────────────────────────────────
+# Option A: MySQL (recommended)
 DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
 DB_PORT=3306
 DB_DATABASE=notemaster_ai
 DB_USERNAME=root
-DB_PASSWORD=your_password
+DB_PASSWORD=your_mysql_password
 
+# Option B: SQLite (easier for local dev — see step below)
+# DB_CONNECTION=sqlite
+
+# ── Google Gemini API ──────────────────────────────────
 GEMINI_API_KEY=your_gemini_api_key_here
+GEMINI_MODEL=gemini-2.5-flash
+
+# ── File Upload Limits ─────────────────────────────────
+MAX_FILE_SIZE=16384
+ALLOWED_EXTENSIONS=pdf,txt
+NOTES_MAX_LENGTH=50000
+NOTES_MIN_LENGTH=10
 ```
 
-**4. Run database migrations**
+---
+
+## Database Setup
+
+### Option A — MySQL
+
+Create the database first:
+
+```sql
+CREATE DATABASE notemaster_ai CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+```
+
+Then run migrations:
+
 ```bash
 php artisan migrate
 ```
 
-**5. Start the development server**
+### Option B — SQLite (no MySQL needed)
+
+```bash
+# 1. Switch the driver in .env
+# DB_CONNECTION=sqlite
+
+# 2. Create the database file
+touch database/database.sqlite
+# Windows PowerShell:
+# New-Item -Path database -Name database.sqlite -ItemType File
+
+# 3. Run migrations
+php artisan migrate
+```
+
+---
+
+## Running the App
+
+You need **two terminal windows** running at the same time.
+
+**Terminal 1 — Laravel server:**
+
 ```bash
 php artisan serve
 ```
-The application will be accessible at `http://127.0.0.1:8000`.
+
+**Terminal 2 — Vite asset builder (if using compiled assets):**
+
+```bash
+npm run dev
+```
+
+> If you are using the CDN Tailwind version (no Vite), you only need Terminal 1.
+
+Open your browser at: **http://127.0.0.1:8000**
+
+---
+
+## Installing the PDF Parser
+
+The app uses `smalot/pdfparser` to extract text from uploaded PDFs. It should already be in `composer.json`, but if you get errors on PDF upload, run:
+
+```bash
+composer require smalot/pdfparser
+```
 
 ---
 
 ## Project Structure
 
-```text
-app/
-├── Http/Controllers/
-│   ├── AuthController.php       # Handles registration, login, and logout
-│   ├── NoteController.php       # Handles summarizing, listing, showing, and deleting notes
-│   ├── ChatController.php       # Manages chat logic for both authenticated users and guests
-│   └── TagController.php        # Handles tag CRUD operations and note association
-├── Models/
-│   ├── Note.php                 # Note model (belongs to User)
-│   ├── User.php                 # User model (has many Notes)
-│   ├── Tag.php                  # Tag model
-│   └── Message.php              # Chat message model
-└── Services/
-    ├── AiService.php            # Manages Google Gemini API integration
-    └── FileParserService.php    # Handles text extraction from PDF and TXT files
-
-resources/views/
-├── index.blade.php              # Main application layout
-└── auth/
-    ├── login.blade.php
-    └── register.blade.php
-
-public/js/
-└── script.js                    # Frontend logic handling UI interactions and API calls
-
-routes/
-└── web.php                      # Application routes (Web and API endpoints)
+```
+notemaster-ai/
+├── app/
+│   ├── Http/Controllers/
+│   │   ├── AuthController.php      # Login, register, logout
+│   │   ├── NoteController.php      # Summarize, list, show, delete notes
+│   │   ├── ChatController.php      # Auth chat + guest chat endpoints
+│   │   └── TagController.php       # Tag CRUD + attach/detach
+│   ├── Models/
+│   │   ├── Note.php                # belongsToMany(Tag), hasMany(Message)
+│   │   ├── Tag.php                 # belongsToMany(Note)
+│   │   ├── Message.php             # belongsTo(Note)
+│   │   └── User.php                # hasMany(Note)
+│   └── Services/
+│       ├── AiService.php           # Gemini API calls (summary + chat)
+│       └── FileParserService.php   # PDF/TXT text extraction
+├── config/
+│   └── notemaster.php              # App-specific config (API keys, limits)
+├── database/migrations/            # All table definitions
+├── public/js/
+│   └── script.js                   # Frontend JavaScript
+├── resources/views/
+│   ├── index.blade.php             # Main app UI
+│   └── auth/
+│       ├── login.blade.php
+│       └── register.blade.php
+└── routes/
+    └── web.php                     # All routes
 ```
 
 ---
 
-## Routing Architecture
+## API Endpoints
 
-| Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| **GET** | `/` | Main application interface |
-| **GET** | `/register` | User registration view |
-| **POST** | `/register` | Process account creation |
-| **GET** | `/login` | User login view |
-| **POST** | `/login` | Process authentication |
-| **POST** | `/logout` | Terminate user session |
-| **POST** | `/api/summarize` | Process text/file summarization |
-| **POST** | `/api/guest-chat` | Process stateless chat messages |
-| **GET** | `/api/notes` | Retrieve all notes for authenticated user |
-| **GET** | `/api/notes/{id}` | Retrieve a specific note |
-| **DELETE** | `/api/notes/{id}` | Remove a specific note |
-| **POST** | `/api/notes/{id}/chat` | Append a message to a note's chat session |
-| **GET** | `/api/notes/{id}/chat` | Retrieve full chat history for a specific note |
-| **GET** | `/api/tags` | Retrieve all custom tags |
-| **POST** | `/api/tags` | Create a new tag |
-| **POST** | `/api/notes/{id}/tags` | Associate a tag with a specific note |
-| **DELETE**| `/api/notes/{id}/tags/{tagId}` | Remove a tag association from a note |
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| POST | `/api/summarize` | Generate summary + save note | No (guests supported) |
+| GET | `/api/notes` | List all notes for current user | Yes |
+| GET | `/api/notes/{id}` | Get a single note | Yes |
+| DELETE | `/api/notes/{id}` | Delete a note | Yes |
+| POST | `/api/notes/{id}/chat` | Send a chat message | Yes |
+| GET | `/api/notes/{id}/chat` | Get chat history | Yes |
+| POST | `/api/guest-chat` | Stateless chat for guests | No |
+| GET | `/api/tags` | List all tags | No |
+| POST | `/api/tags` | Create a new tag | Yes |
+| POST | `/api/notes/{id}/tags` | Attach a tag to a note | Yes |
+| DELETE | `/api/notes/{id}/tags/{tag}` | Remove a tag from a note | Yes |
 
 ---
 
-## System Workflows
+## Common Issues
 
-### Authentication Flow
-* **Guest Access:** Unregistered users can utilize the summarization and inline chat features. Data is processed statelessly and is not persisted to the database.
-* **Registered Users:** Authenticated sessions automatically save generated summaries, retain complete chat histories, provide a persistent note list via the sidebar, and allow full tag management.
+**`Access denied for user 'root'@'localhost'`**
+Your MySQL password in `.env` is wrong. Try `DB_PASSWORD=` (empty) or switch to SQLite.
 
-### AI Integration Workflow
-1.  The user submits raw text or uploads a supported file (PDF/TXT).
-2.  `FileParserService` extracts text from the document if a file was provided.
-3.  `AiService` formats and transmits the extracted text to the Gemini API utilizing a structured summarization prompt.
-4.  The API returns a structured summary. For authenticated users, this summary is persisted to the database and associated with their `user_id`.
-5.  During subsequent chat sessions, the note's original content and summary are injected as context with each query, ensuring the AI maintains contextual awareness.
+**`RuntimeException: No application encryption key`**
+Run `php artisan key:generate`.
 
----
+**`Network error. Please check your connection.`**
+Make sure `php artisan serve` is running and you're accessing `http://127.0.0.1:8000` (not `localhost`).
 
-## Troubleshooting
+**Summaries cut off mid-sentence**
+Check that `maxOutputTokens` in `AiService.php` is set to `8192`, not `2000`.
 
-**Notes are not saving to the database:**
-* Ensure that `user_id` is included in the `$fillable` array within `app/Models/Note.php`.
-* Verify that all database migrations have been successfully executed:
-    ```bash
-    php artisan migrate:status
-    php artisan migrate
-    ```
+**PDF upload returns an error**
+Run `composer require smalot/pdfparser` and make sure `php.ini` has `extension=fileinfo` enabled.
 
-**Authentication is failing within `/api` routes:**
-* Verify that your `Route::prefix('api')` group includes the `->middleware('web')` constraint in `routes/web.php` if relying on session-based authentication rather than token-based API authentication.
-
-**AI Summaries are terminating prematurely:**
-* Review the `maxOutputTokens` parameter in `AiService.php`. Ensure it is configured to accommodate larger outputs (e.g., `8192`).
+**CSRF token mismatch (419 error)**
+Make sure `<meta name="csrf-token" content="{{ csrf_token() }}">` is in the `<head>` of `index.blade.php` and that `public/js/script.js` is the updated version with `jsonHeaders()` and `csrfHeaders()` helpers.
 
 ---
 
-## License
+## Environment Variables Reference
 
-This application was developed as an educational project to demonstrate Laravel MVC architecture, Eloquent ORM implementation, CRUD operations, and external API integration. It is open-sourced and available for modification and learning purposes.
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `GEMINI_API_KEY` | Your Google Gemini API key | — |
+| `GEMINI_MODEL` | Gemini model to use | `gemini-2.5-flash` |
+| `MAX_FILE_SIZE` | Max upload size in KB | `16384` (16MB) |
+| `ALLOWED_EXTENSIONS` | Comma-separated allowed file types | `pdf,txt` |
+| `NOTES_MAX_LENGTH` | Max characters for text input | `50000` |
+| `NOTES_MIN_LENGTH` | Min characters for text input | `10` |
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Backend Framework | Laravel 11 (PHP 8.2+) |
+| ORM | Eloquent |
+| Database | MySQL 8 / SQLite |
+| AI Provider | Google Gemini 2.5 Flash |
+| Frontend Styling | Tailwind CSS (CDN) |
+| Frontend Logic | Vanilla JavaScript |
+| Icons | Lucide Icons |
+| PDF Parsing | smalot/pdfparser |
+| Fonts | Inter + Space Grotesk (Google Fonts) |
+
+---
+
+## Security Notes
+
+- Never commit your `.env` file — it is already in `.gitignore`
+- Never hardcode your `GEMINI_API_KEY` anywhere in the source code
+- All state-changing API requests are protected by Laravel's CSRF middleware
+- Users can only access, modify, or delete their own notes (ownership checked in every controller method)
+
+---
+
+*Built with Laravel 11 · Powered by Google Gemini · Made by PJ*
