@@ -304,7 +304,7 @@ resources/views/
 **Pearl Kristian M. Gardose** — Front and Backend Programmer  
 **Henry Philip S. Dael** — Quality Assurance  
 **Stephanie Princess Grace S. Aniag** — Project Manager  
-**Keegan Jeoff Liboon** — Documentation
+**Keegan Jeoff G. Liboon** — Documentation
 
 </div>
 
