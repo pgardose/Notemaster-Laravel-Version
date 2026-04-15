@@ -47,12 +47,12 @@
 
 ### Side-by-Side Summary View
 
-![Side by Side View](images/666812354_707397062437227_1189742417005180781_n-1.png)
+![Side by Side View](images/666006818_1522223719686407_1198074747487618112_n.png)
 *Original text and AI summary displayed side-by-side for easy comparison.*
 
 ### AI Chat Drawer
 
-![AI Chat Drawer](images/664446188_955396183639394_2685805113284431613_n.png)
+![AI Chat Drawer](images/663593340_1662664064869711_748684715987180374_n.png)
 *The slide-in chat drawer for asking context-aware questions about a note.*
 
 ### Quiz Generator
