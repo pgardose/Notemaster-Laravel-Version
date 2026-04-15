@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\QuizController;
 use App\Http\Controllers\NoteController;
 use App\Http\Controllers\TagController;
 use App\Http\Controllers\ChatController;
@@ -37,6 +38,16 @@ Route::get('/health', function () {
 
 // ── API Routes (web middleware so session/Auth::check() works) ─
 Route::prefix('api')->middleware('web')->group(function () {
+
+// TEMP DEBUG — remove before presentation
+Route::get('/debug-quiz/{note}', function ($noteId) {
+    $note = \App\Models\Note::findOrFail($noteId);
+    $controller = new \App\Http\Controllers\QuizController();
+    // Call generate and return raw response
+    return $controller->generate($note);
+})->middleware('auth');
+
+    Route::post('/notes/{note}/quiz', [QuizController::class, 'generate']);
 
     // Summarize (guests get summary only, auth users get it saved)
     Route::post('/summarize', [NoteController::class, 'summarize']);

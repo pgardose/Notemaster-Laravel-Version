@@ -537,6 +537,10 @@ async function openNoteModal(noteId) {
     } catch (e) { console.error(e); alert('Failed to load note'); }
 }
 function closeNoteModal() {
+    // If quiz is open, clean it up first
+    if (quizEl.container && !quizEl.container.classList.contains('hidden')) {
+        exitQuiz();
+    }
     elements.noteModal?.classList.add('hidden');
     currentNoteId = null;
     document.body.style.overflow = '';
@@ -577,3 +581,277 @@ function showError(message) {
 }
 function hideError() { elements.errorSection?.classList.add('hidden'); }
 function debounce(func, wait) { let t; return (...args) => { clearTimeout(t); t = setTimeout(() => func(...args), wait); }; }
+
+// ════════════════════════════════════════════════════════════
+//  QUIZ ENGINE
+// ════════════════════════════════════════════════════════════
+
+// ── Quiz state ────────────────────────────────────────────────
+const quiz = {
+    questions:       [],   // parsed JSON from API
+    currentIndex:    0,    // which question we're on
+    score:           0,    // correct answers
+    answered:        false, // has user picked an answer for current Q
+};
+
+// ── Quiz DOM refs ─────────────────────────────────────────────
+const quizEl = {
+    container:    document.getElementById('quizContainer'),
+    panels:       document.querySelector('.flex.gap-4.p-6'),  // the original side-by-side panels div
+    generateBtn:  document.getElementById('generateQuizBtn'),
+    closeBtn:     document.getElementById('closeQuizBtn'),
+    exitBtn:      document.getElementById('quizExitBtn'),
+    retryBtn:     document.getElementById('quizRetryBtn'),
+    nextBtn:      document.getElementById('quizNextBtn'),
+    progress:     document.getElementById('quizProgress'),
+    progressBar:  document.getElementById('quizProgressBar'),
+    questionText: document.getElementById('quizQuestionText'),
+    optionsDiv:   document.getElementById('quizOptions'),
+    questionCard: document.getElementById('quizQuestionCard'),
+    scoreCard:    document.getElementById('quizScoreCard'),
+    scoreText:    document.getElementById('quizScoreText'),
+    scoreSubtext: document.getElementById('quizScoreSubtext'),
+    scoreIcon:    document.getElementById('quizScoreIcon'),
+};
+
+// ── Wire up events ────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+    quizEl.generateBtn?.addEventListener('click', handleGenerateQuiz);
+    quizEl.closeBtn?.addEventListener('click', exitQuiz);
+    quizEl.exitBtn?.addEventListener('click', exitQuiz);
+    quizEl.retryBtn?.addEventListener('click', startQuiz);
+    quizEl.nextBtn?.addEventListener('click', nextQuestion);
+});
+
+// ── Generate quiz (API call) ──────────────────────────────────
+async function handleGenerateQuiz() {
+    if (!currentNoteId) return;
+
+    // Loading state on button — toggle icon/spinner/label elements
+    const btn = quizEl.generateBtn;
+    btn.disabled = true;
+    document.getElementById('quizBtnIcon')?.classList.add('hidden');
+    document.getElementById('quizBtnSpinner')?.classList.remove('hidden');
+    const quizBtnLabel = document.getElementById('quizBtnLabel');
+    if (quizBtnLabel) quizBtnLabel.textContent = 'Generating…';
+
+    try {
+        const res  = await fetch(`/api/notes/${currentNoteId}/quiz`, {
+            method: 'POST',
+            headers: jsonHeaders(),
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+            alert(data.error || 'Failed to generate quiz. Please try again.');
+            return;
+        }
+
+        // Store questions and launch
+        quiz.questions = Array.isArray(data) ? data : (data.quiz ?? []);
+        if (!quiz.questions.length) { alert("No questions returned. Please try again."); return; }
+        startQuiz();
+
+    } catch (e) {
+        console.error('Quiz error:', e);
+        alert('Network error. Please check your connection.');
+    } finally {
+        btn.disabled = false;
+        document.getElementById('quizBtnIcon')?.classList.remove('hidden');
+        document.getElementById('quizBtnSpinner')?.classList.add('hidden');
+        const lbl = document.getElementById('quizBtnLabel');
+        if (lbl) lbl.textContent = 'Generate Quiz';
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+}
+
+// ── Show quiz UI, hide note panels ───────────────────────────
+function startQuiz() {
+    quiz.currentIndex = 0;
+    quiz.score        = 0;
+    quiz.answered     = false;
+
+    // Hide the original panels area, show quiz
+    hidePanelsShowQuiz(true);
+
+    // Show question card, hide score card
+    quizEl.questionCard?.classList.remove('hidden');
+    quizEl.scoreCard?.classList.add('hidden');
+
+    renderQuestion();
+}
+
+function hidePanelsShowQuiz(show) {
+    // Hide/show the side-by-side panels area
+    const panelsWrapper = document.getElementById('modalOriginalPanel')?.closest('.flex.gap-4');
+    if (panelsWrapper) panelsWrapper.style.display = show ? 'none' : '';
+
+    // Hide/show the view toggle bar (Side-by-Side / Summary Only)
+    const viewToggleBar = document.getElementById('modalViewToggleBar');
+    if (viewToggleBar) viewToggleBar.style.display = show ? 'none' : '';
+
+    // Hide/show the Generate Quiz + AI Chat buttons in the footer
+    const quizChatBtns = document.getElementById('modalQuizChatBtns');
+    if (quizChatBtns) quizChatBtns.style.display = show ? 'none' : '';
+
+    // Show/hide the quiz container itself
+    if (quizEl.container) {
+        if (show) {
+            quizEl.container.classList.remove('hidden');
+            quizEl.container.style.display = 'flex';
+            quizEl.container.style.flexDirection = 'column';
+        } else {
+            quizEl.container.classList.add('hidden');
+            quizEl.container.style.display = '';
+        }
+    }
+}
+
+function exitQuiz() {
+    hidePanelsShowQuiz(false);
+    quizEl.nextBtn?.classList.add('hidden');
+    quiz.questions   = [];
+    quiz.currentIndex = 0;
+    quiz.score       = 0;
+}
+
+// ── Render current question ───────────────────────────────────
+function renderQuestion() {
+    const q = quiz.questions[quiz.currentIndex];
+    if (!q) return;
+
+    quiz.answered = false;
+
+    // Progress
+    const num   = quiz.currentIndex + 1;
+    const total = quiz.questions.length;
+    if (quizEl.progress)    quizEl.progress.textContent = `Question ${num} of ${total}`;
+    if (quizEl.progressBar) quizEl.progressBar.style.width = `${((num - 1) / total) * 100}%`;
+
+    // Question text
+    if (quizEl.questionText) quizEl.questionText.textContent = `${num}. ${q.question}`;
+
+    // Options
+    if (!quizEl.optionsDiv) return;
+    quizEl.optionsDiv.innerHTML = '';
+    quizEl.nextBtn?.classList.add('hidden');
+
+        q.options.forEach((option) => {
+        const btn = document.createElement('button');
+        btn.className = [
+            'w-full text-left px-5 py-4 rounded-xl border-2 border-slate-200',
+            'bg-white text-slate-700 text-sm font-medium',
+            'hover:border-violet-300 hover:bg-violet-50',
+            'transition-all duration-200 cursor-pointer quiz-option',
+        ].join(' ');
+        btn.textContent = option;
+        btn.addEventListener('click', () => {
+            // "Selected" active state — highlight before answer is revealed
+            if (!quiz.answered) {
+                quizEl.optionsDiv.querySelectorAll('.quiz-option').forEach(b => {
+                    b.classList.remove(
+                        'bg-violet-100', 'border-violet-500', 'ring-2', 'ring-violet-200', 'text-violet-800'
+                    );
+                    b.classList.add('bg-white', 'border-slate-200', 'text-slate-700');
+                });
+                btn.classList.remove('bg-white', 'border-slate-200', 'text-slate-700');
+                btn.classList.add(
+                    'bg-violet-100', 'border-violet-500', 'ring-2', 'ring-violet-200', 'text-violet-800'
+                );
+            }
+            handleAnswer(btn, option, q.answer);
+        });
+        quizEl.optionsDiv.appendChild(btn);
+    });
+
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+// ── Handle answer selection ───────────────────────────────────
+function handleAnswer(clickedBtn, selected, correct) {
+    if (quiz.answered) return;  // prevent double-clicking
+    quiz.answered = true;
+
+    const isCorrect = selected === correct;
+    if (isCorrect) quiz.score++;
+
+    // Style all options
+    const allOptions = quizEl.optionsDiv?.querySelectorAll('.quiz-option');
+    allOptions?.forEach(btn => {
+        btn.disabled = true;
+        const text = btn.textContent;
+
+        if (text === correct) {
+            // Always highlight the correct answer in teal
+            btn.className = btn.className
+                .replace(/border-slate-200|border-violet-400/g, 'border-teal-500')
+                .replace(/bg-white|bg-violet-50/g, 'bg-teal-50')
+                .replace(/text-slate-700/g, 'text-teal-800');
+            btn.innerHTML = `${escapeHtml(text)} <span class="float-right text-teal-600 font-bold">✓</span>`;
+        } else if (text === selected && !isCorrect) {
+            // Wrong answer — red
+            btn.className = btn.className
+                .replace(/border-slate-200|border-violet-400/g, 'border-red-400')
+                .replace(/bg-white|bg-violet-50/g, 'bg-red-50')
+                .replace(/text-slate-700/g, 'text-red-700');
+            btn.innerHTML = `${escapeHtml(text)} <span class="float-right text-red-500 font-bold">✗</span>`;
+        }
+    });
+
+    // Show Next / Finish button
+    if (quizEl.nextBtn) {
+        quizEl.nextBtn.classList.remove('hidden');
+        const isLast = quiz.currentIndex >= quiz.questions.length - 1;
+        quizEl.nextBtn.innerHTML = isLast
+            ? `See Results <i data-lucide="bar-chart-2" class="w-4 h-4 inline ml-1"></i>`
+            : `Next Question <i data-lucide="arrow-right" class="w-4 h-4 inline ml-1"></i>`;
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+}
+
+// ── Advance to next question or show score ────────────────────
+function nextQuestion() {
+    if (!quiz.answered) return;
+
+    quiz.currentIndex++;
+
+    if (quiz.currentIndex >= quiz.questions.length) {
+        showScore();
+    } else {
+        renderQuestion();
+    }
+}
+
+// ── Final score screen ────────────────────────────────────────
+function showScore() {
+    // Update progress bar to 100%
+    if (quizEl.progressBar) quizEl.progressBar.style.width = '100%';
+    if (quizEl.progress)    quizEl.progress.textContent = 'Complete!';
+
+    quizEl.questionCard?.classList.add('hidden');
+    quizEl.scoreCard?.classList.remove('hidden');
+    quizEl.nextBtn?.classList.add('hidden');
+
+    const total   = quiz.questions.length;
+    const score   = quiz.score;
+    const percent = Math.round((score / total) * 100);
+
+    // Score text
+    if (quizEl.scoreText) {
+        quizEl.scoreText.textContent = `You scored ${score} out of ${total} (${percent}%)`;
+    }
+
+    // Motivational subtext + emoji based on score
+    let emoji = '😅';
+    let msg   = 'Keep studying — you\'ll get there!';
+
+    if (percent === 100) { emoji = '🏆'; msg = 'Perfect score! Outstanding work!'; }
+    else if (percent >= 80) { emoji = '🎉'; msg = 'Great job! You know this material well.'; }
+    else if (percent >= 60) { emoji = '👍'; msg = 'Good effort! Review the missed questions.'; }
+    else if (percent >= 40) { emoji = '📚'; msg = 'Keep studying — you\'re getting there!'; }
+
+    if (quizEl.scoreIcon)    quizEl.scoreIcon.textContent    = emoji;
+    if (quizEl.scoreSubtext) quizEl.scoreSubtext.textContent = msg;
+
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+}

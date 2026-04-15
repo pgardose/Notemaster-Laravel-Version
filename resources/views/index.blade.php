@@ -415,8 +415,7 @@
             </div>
         </div>
 
-        <div class="px-6 pt-4 pb-3 shrink-0 bg-slate-50 border-b border-slate-100">
-            <div class="bg-slate-200 rounded-xl p-1 flex gap-1 w-fit">
+        <div id="modalViewToggleBar" class="px-6 pt-4 pb-3 shrink-0 bg-slate-50 border-b border-slate-100">            <div class="bg-slate-200 rounded-xl p-1 flex gap-1 w-fit">
                 <button id="modalSideBySideBtn" class="active-tab flex items-center gap-2 px-4 py-2 rounded-lg text-sm transition-all duration-200">
                     <i data-lucide="columns-2" class="w-4 h-4"></i>Side-by-Side
                 </button>
@@ -444,11 +443,68 @@
             </div>
         </div>
 
+        {{-- ══ QUIZ CONTAINER — hidden until Generate Quiz is clicked ══ --}}
+        <div id="quizContainer" class="hidden flex-col flex-1 min-h-0 bg-slate-50 px-6 pb-6 pt-4 gap-4 overflow-y-auto panel-scroll">
+
+            <div class="flex items-center justify-between">
+                <div>
+                    <p id="quizProgress" class="text-sm font-semibold text-slate-700">Question 1 of 5</p>
+                    <div class="mt-1.5 h-1.5 w-48 bg-slate-200 rounded-full overflow-hidden">
+                        <div id="quizProgressBar" class="h-full bg-violet-500 rounded-full transition-all duration-300" style="width:0%"></div>
+                    </div>
+                </div>
+                <button id="closeQuizBtn"
+                    class="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-700 px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 transition bg-white">
+                    <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>Back to Note
+                </button>
+            </div>
+
+            <div id="quizQuestionCard" class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 flex flex-col gap-5">
+                <p id="quizQuestionText" class="text-slate-800 font-semibold text-base leading-relaxed"></p>
+                <div id="quizOptions" class="flex flex-col gap-3"></div>
+                <div class="flex justify-end">
+                    <button id="quizNextBtn"
+                        class="hidden items-center gap-2 bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-all shadow-sm">
+                        Next Question <i data-lucide="arrow-right" class="w-4 h-4 inline ml-1"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div id="quizScoreCard" class="hidden bg-white rounded-2xl border border-slate-200 shadow-sm p-8 flex flex-col items-center gap-3 text-center">
+                <div id="quizScoreIcon" class="text-5xl"></div>
+                <p id="quizScoreText" class="text-2xl font-bold text-slate-800 mt-1"></p>
+                <p id="quizScoreSubtext" class="text-slate-500 text-sm"></p>
+                <div class="flex gap-3 mt-4">
+                    <button id="quizRetryBtn"
+                        class="flex items-center gap-2 bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-all shadow-sm">
+                        <i data-lucide="refresh-cw" class="w-4 h-4"></i>Try Again
+                    </button>
+                    <button id="quizExitBtn"
+                        class="flex items-center gap-2 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 text-sm font-medium px-5 py-2.5 rounded-xl transition-all">
+                        <i data-lucide="file-text" class="w-4 h-4"></i>Back to Note
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
         <div class="flex items-center gap-3 px-6 py-4 shrink-0 bg-white border-t border-slate-100">
             <button id="modalCopyBtn"
                 class="flex items-center justify-center w-11 h-11 bg-white border border-slate-200 rounded-xl text-slate-500 hover:text-slate-700 hover:border-slate-300 transition-all shadow-sm">
                 <i data-lucide="copy" class="w-4 h-4"></i>
             </button>
+
+            {{-- ── Generate Quiz Button ── --}}
+            <button id="generateQuizBtn"
+                class="flex items-center gap-2 bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold px-5 py-3 rounded-xl transition-all shadow-sm disabled:opacity-60 disabled:cursor-not-allowed">
+                <i id="quizBtnIcon" data-lucide="list-checks" class="w-4 h-4"></i>
+                <svg id="quizBtnSpinner" class="hidden w-4 h-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                </svg>
+                <span id="quizBtnLabel">Generate Quiz</span>
+            </button>
+
             <button id="modalAiChatBtn"
                 class="flex items-center gap-2 bg-primary-500 hover:bg-primary-600 text-white text-sm font-semibold px-5 py-3 rounded-xl transition-all shadow-sm ml-auto">
                 <i data-lucide="message-circle" class="w-4 h-4"></i>AI Chat
