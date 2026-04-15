@@ -42,7 +42,7 @@
 
 ### Main Dashboard — Summarize Notes
 
-![Summarize Screen](images/666812354_707397062437227_1189742417005180781_n.png)
+![Summarize Screen](images/Screenshot%202026-04-15%20103809.png)
 *Paste notes or upload a PDF/TXT file to receive an AI-generated summary.*
 
 ### Side-by-Side Summary View
