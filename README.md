@@ -35,8 +35,6 @@
 
 ## 📸 Application Screenshots
 
-> **Instructions:** Take screenshots of your running app and upload them to your GitHub repository's `/screenshots` folder (or use a free image host like Imgur). Then replace the placeholder links below.
-
 ### Login Screen
 
 ![Login Screen](images/666812354_707397062437227_1189742417005180781_n.png)
@@ -305,6 +303,7 @@ resources/views/
 **Henry Philip S. Dael** — Quality Assurance
 **Stephanie Princess Grace S. Aniag** — Project Manager
 **Keegan Jeoff Liboon** — Documentation
+
 ---
 
 *NoteMaster AI — Study smarter, and Study better.*
