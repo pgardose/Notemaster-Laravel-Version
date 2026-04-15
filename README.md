@@ -301,14 +301,12 @@ resources/views/
 
 <div align="center">
 
-| Name | Role |
-| :--- | :--- |
-| **Pearl Kristian M. Gardose** | Front and Backend Programmer |
-| **Henry Philip S. Dael** | Quality Assurance |
-| **Stephanie Princess Grace S. Aniag** | Project Manager |
-| **Keegan Jeoff Liboon** | Documentation |
+**Pearl Kristian M. Gardose** — Front and Backend Programmer  
+**Henry Philip S. Dael** — Quality Assurance  
+**Stephanie Princess Grace S. Aniag** — Project Manager  
+**Keegan Jeoff Liboon** — Documentation
 
 </div>
----
+
 
 *NoteMaster AI — Study smarter, and Study better.*
